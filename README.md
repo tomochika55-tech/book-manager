@@ -46,7 +46,8 @@ npm run dev
 
 | 変数 | 必須 | 説明 |
 | --- | --- | --- |
-| `DATABASE_URL` | ✅ | SQLite の接続先（例: `file:./dev.db`） |
+| `DATABASE_URL` | ✅ | PostgreSQL のプール付き接続 URL（Neon なら `-pooler` 入り） |
+| `DIRECT_URL` | ✅ | PostgreSQL の直結 URL（マイグレーション用。Neon なら `-pooler` なし） |
 | `AUTH_SECRET` | ✅ | セッション署名用のランダム文字列 |
 | `GEMINI_API_KEY` | 任意 | 設定するとおすすめが Gemini による AI 提案になる |
 | `ANTHROPIC_API_KEY` | 任意 | 設定するとおすすめが Claude による AI 提案になる（Gemini より優先） |
@@ -88,16 +89,18 @@ prisma/
   seed.ts                サンプルデータ
 ```
 
-## デプロイ（Vercel）
+## デプロイ（Vercel + Neon）
 
-1. このリポジトリを Vercel にインポート
-2. 環境変数 `DATABASE_URL` と `AUTH_SECRET`（任意で AI キー）を設定
-3. デプロイ
+このアプリは PostgreSQL を使います。無料の [Neon](https://neon.tech/) を使うのが手軽です。
 
-> SQLite はサーバーレス環境では永続化されないため、本番運用では
-> [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres) や
-> [Turso](https://turso.tech/) などへの移行を推奨します
-> （`prisma/schema.prisma` の `datasource` を変更）。
+1. **Neon** で無料プロジェクトを作成し、接続文字列を2つ控える
+   - プール付き（`-pooler` 入り）→ `DATABASE_URL`
+   - 直結（`-pooler` なし）→ `DIRECT_URL`
+2. **Vercel** にこのリポジトリをインポート
+3. Vercel の **Environment Variables** に `DATABASE_URL` / `DIRECT_URL` / `AUTH_SECRET`（任意で AI キー）を設定
+4. **Deploy**。ビルド時に `prisma migrate deploy` が走り、テーブルが自動作成されます
+
+ローカル開発でも同じ Neon を使えます（`.env` に上記を設定）。
 
 ## 今後の拡張アイデア
 
