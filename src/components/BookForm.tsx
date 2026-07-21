@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import StarRating from "@/components/StarRating";
+import BookSearch from "@/components/BookSearch";
 import { STATUS_LABELS, type BookStatus } from "@/lib/types";
 
 export type BookFormValues = {
@@ -92,6 +93,21 @@ export default function BookForm({ initial }: { initial?: Partial<BookFormValues
     <form onSubmit={handleSubmit} className="card space-y-5 p-6">
       {error && (
         <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</div>
+      )}
+
+      {!isEdit && (
+        <BookSearch
+          onSelect={(r) =>
+            setValues((v) => ({
+              ...v,
+              title: r.title || v.title,
+              author: r.author || v.author,
+              genre: r.genre || v.genre,
+              coverUrl: r.coverUrl || v.coverUrl,
+              pages: r.pages != null ? String(r.pages) : v.pages,
+            }))
+          }
+        />
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">

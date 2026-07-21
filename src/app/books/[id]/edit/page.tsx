@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import BookForm from "@/components/BookForm";
+import { getCurrentUserId } from "@/lib/auth-helpers";
 import type { BookStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -12,8 +13,9 @@ export default async function EditBookPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const userId = await getCurrentUserId();
   const book = await prisma.book.findUnique({ where: { id } });
-  if (!book) notFound();
+  if (!book || book.userId !== userId) notFound();
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

@@ -10,15 +10,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// アプリの利用者。メール+パスワードでログインする。
+/// 将来的に Google などの OAuth を足す場合は passwordHash を任意のままにし、
+/// Account モデルを追加すれば拡張できる。
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String?
+  createdAt    DateTime @default(now())
+  books        Book[]
+}
+
 /// 1 冊の本の記録。ステータス・評価・感想・共有設定などを持つ。
 model Book {
   id         String    @id @default(cuid())
+  // 所有ユーザー。ユーザーごとに本棚を分離する。
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   title      String
   author     String
   genre      String?
   coverUrl   String?
   pages      Int?
-  // want (読みたい) | reading (読書中) | finished (読了)
+  // want (読みたい/積読) | reading (読書中) | finished (読了)
   status     String    @default("want")
   // 自分でつける 1〜5 の星評価（読了本のみ想定）
   rating     Int?
@@ -30,6 +45,7 @@ model Book {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
+  @@index([userId])
   @@index([status])
   @@index([genre])
 }

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import StarRating from "@/components/StarRating";
 import BookActions from "@/components/BookActions";
+import { getCurrentUserId } from "@/lib/auth-helpers";
 import { STATUS_LABELS, STATUS_STYLES, type BookStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -22,8 +23,9 @@ export default async function BookDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const userId = await getCurrentUserId();
   const book = await prisma.book.findUnique({ where: { id } });
-  if (!book) notFound();
+  if (!book || book.userId !== userId) notFound();
 
   const status = book.status as BookStatus;
 

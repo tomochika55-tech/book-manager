@@ -1,13 +1,25 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import BookCard from "@/components/BookCard";
+import MonthlyChart from "@/components/MonthlyChart";
+import GenreChart from "@/components/GenreChart";
+import { getCurrentUserId } from "@/lib/auth-helpers";
+import {
+  monthlyFinished,
+  genreDistribution,
+  tsundokuCount,
+  totalPagesRead,
+} from "@/lib/stats";
 import { STATUS_LABELS, STATUS_ORDER, type BookStatus } from "@/lib/types";
 
 // 常に最新のデータを表示する（キャッシュしない）
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const books = await prisma.book.findMany({ orderBy: { updatedAt: "desc" } });
+  const userId = await getCurrentUserId();
+  const books = userId
+    ? await prisma.book.findMany({ where: { userId }, orderBy: { updatedAt: "desc" } })
+    : [];
 
   const finished = books.filter((b) => b.status === "finished");
   const ratings = finished.filter((b) => b.rating != null).map((b) => b.rating as number);
@@ -20,20 +32,32 @@ export default async function HomePage() {
     finished,
   };
 
+  const monthly = monthlyFinished(books, 12);
+  const genres = genreDistribution(books);
+  const tsundoku = tsundokuCount(books);
+  const pages = totalPagesRead(books);
+
   return (
     <div className="space-y-10">
-      {/* ダッシュボード */}
-      <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      {/* ダッシュボード（サマリー） */}
+      <section className="grid grid-cols-2 gap-4 sm:grid-cols-5">
         <Stat label="登録した本" value={books.length} />
         <Stat label="読了" value={finished.length} />
-        <Stat label="読書中" value={grouped.reading.length} />
+        <Stat label="積読" value={tsundoku} suffix={tsundoku > 0 ? "冊" : ""} />
         <Stat label="平均評価" value={avgRating} suffix={avgRating !== "—" ? "★" : ""} />
+        <Stat label="読んだページ" value={pages.toLocaleString()} />
       </section>
 
       {books.length === 0 ? (
         <EmptyState />
       ) : (
         <div className="space-y-10">
+          {/* グラフ */}
+          <section className="grid gap-4 lg:grid-cols-2">
+            <MonthlyChart data={monthly} />
+            <GenreChart data={genres} />
+          </section>
+
           {STATUS_ORDER.map((status) => {
             const list = grouped[status];
             if (list.length === 0) return null;

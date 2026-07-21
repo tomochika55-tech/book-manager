@@ -21,6 +21,16 @@ if [ ! -f .env ]; then
   cp .env.example .env
 fi
 
+# AUTH_SECRET が未設定/プレースホルダのままならランダム生成して差し替える。
+if ! grep -q '^AUTH_SECRET=' .env || grep -q 'replace-with-a-random-secret' .env; then
+  echo "[session-start] AUTH_SECRET を生成しています..."
+  SECRET="$(node -e "console.log(require('crypto').randomBytes(32).toString('base64'))")"
+  # 既存の AUTH_SECRET 行を削除してから追記
+  grep -v '^AUTH_SECRET=' .env > .env.tmp || true
+  mv .env.tmp .env
+  echo "AUTH_SECRET=\"$SECRET\"" >> .env
+fi
+
 echo "[session-start] Prisma Client を生成しています..."
 npx prisma generate
 
