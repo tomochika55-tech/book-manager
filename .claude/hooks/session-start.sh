@@ -34,7 +34,9 @@ fi
 echo "[session-start] Prisma Client を生成しています..."
 npx prisma generate
 
-echo "[session-start] データベースを準備しています..."
-npx prisma db push --skip-generate
+# DB が設定・到達可能ならマイグレーションを適用する。
+# （未設定でもセッションが止まらないよう失敗は無視する）
+echo "[session-start] データベースのマイグレーションを適用しています..."
+npx prisma migrate deploy || echo "[session-start] DB 未接続のためスキップしました。"
 
 echo "[session-start] セットアップ完了。"
