@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isBookStatus } from "@/lib/types";
+import { getCurrentUserId } from "@/lib/auth-helpers";
 
-// GET /api/books — 本の一覧を返す
+// GET /api/books — ログイン中ユーザーの本の一覧を返す
 export async function GET() {
+  const userId = await getCurrentUserId();
+  if (!userId) return NextResponse.json({ error: "未認証" }, { status: 401 });
+
   const books = await prisma.book.findMany({
+    where: { userId },
     orderBy: { updatedAt: "desc" },
   });
   return NextResponse.json(books);
@@ -12,6 +17,9 @@ export async function GET() {
 
 // POST /api/books — 本を新規登録
 export async function POST(request: Request) {
+  const userId = await getCurrentUserId();
+  if (!userId) return NextResponse.json({ error: "未認証" }, { status: 401 });
+
   const body = await request.json();
 
   const title = typeof body.title === "string" ? body.title.trim() : "";
@@ -28,6 +36,7 @@ export async function POST(request: Request) {
 
   const book = await prisma.book.create({
     data: {
+      userId,
       title,
       author,
       genre: emptyToNull(body.genre),

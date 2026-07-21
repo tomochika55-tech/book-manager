@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { auth } from "@/auth";
+import LogoutButton from "@/components/LogoutButton";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -7,11 +9,14 @@ export const metadata: Metadata = {
   description: "本を記録し、評価し、共有し、次の一冊に出会える読書管理サービス",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await auth();
+  const user = session?.user;
+
   return (
     <html lang="ja">
       <body>
@@ -22,15 +27,32 @@ export default function RootLayout({
                 <span aria-hidden>📚</span> Yomu
               </Link>
               <nav className="flex items-center gap-1 text-sm">
-                <Link href="/" className="btn-ghost">
-                  本棚
-                </Link>
-                <Link href="/recommendations" className="btn-ghost">
-                  おすすめ
-                </Link>
-                <Link href="/books/new" className="btn-primary">
-                  + 本を追加
-                </Link>
+                {user ? (
+                  <>
+                    <Link href="/" className="btn-ghost">
+                      本棚
+                    </Link>
+                    <Link href="/recommendations" className="btn-ghost">
+                      おすすめ
+                    </Link>
+                    <Link href="/books/new" className="btn-primary">
+                      + 本を追加
+                    </Link>
+                    <span className="ml-2 hidden text-xs text-gray-400 sm:inline">
+                      {user.name || user.email}
+                    </span>
+                    <LogoutButton />
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" className="btn-ghost">
+                      ログイン
+                    </Link>
+                    <Link href="/register" className="btn-primary">
+                      新規登録
+                    </Link>
+                  </>
+                )}
               </nav>
             </div>
           </header>

@@ -1,24 +1,31 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { isBookStatus } from "@/lib/types";
+import { getCurrentUserId } from "@/lib/auth-helpers";
 
 type Params = { params: Promise<{ id: string }> };
 
-// GET /api/books/:id
+// GET /api/books/:id — 自分の本のみ取得可能
 export async function GET(_req: Request, { params }: Params) {
+  const userId = await getCurrentUserId();
+  if (!userId) return NextResponse.json({ error: "未認証" }, { status: 401 });
+
   const { id } = await params;
   const book = await prisma.book.findUnique({ where: { id } });
-  if (!book) {
+  if (!book || book.userId !== userId) {
     return NextResponse.json({ error: "見つかりません" }, { status: 404 });
   }
   return NextResponse.json(book);
 }
 
-// PATCH /api/books/:id — 部分更新
+// PATCH /api/books/:id — 部分更新（自分の本のみ）
 export async function PATCH(request: Request, { params }: Params) {
+  const userId = await getCurrentUserId();
+  if (!userId) return NextResponse.json({ error: "未認証" }, { status: 401 });
+
   const { id } = await params;
   const existing = await prisma.book.findUnique({ where: { id } });
-  if (!existing) {
+  if (!existing || existing.userId !== userId) {
     return NextResponse.json({ error: "見つかりません" }, { status: 404 });
   }
 
@@ -46,11 +53,14 @@ export async function PATCH(request: Request, { params }: Params) {
   return NextResponse.json(book);
 }
 
-// DELETE /api/books/:id
+// DELETE /api/books/:id — 自分の本のみ削除可能
 export async function DELETE(_req: Request, { params }: Params) {
+  const userId = await getCurrentUserId();
+  if (!userId) return NextResponse.json({ error: "未認証" }, { status: 401 });
+
   const { id } = await params;
   const existing = await prisma.book.findUnique({ where: { id } });
-  if (!existing) {
+  if (!existing || existing.userId !== userId) {
     return NextResponse.json({ error: "見つかりません" }, { status: 404 });
   }
   await prisma.book.delete({ where: { id } });
