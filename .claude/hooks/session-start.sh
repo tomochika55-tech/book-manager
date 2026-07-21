@@ -1,0 +1,30 @@
+#!/bin/bash
+# SessionStart hook — Claude Code on the web でセッション開始時に依存関係を準備する。
+# 依存インストール・環境変数・DB を用意し、lint やアプリ起動がすぐ動く状態にする。
+set -euo pipefail
+
+# Claude Code on the web（リモート環境）でのみ実行する。
+# ローカルでの通常の開発を邪魔しないためのガード。
+if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
+  exit 0
+fi
+
+cd "$CLAUDE_PROJECT_DIR"
+
+echo "[session-start] 依存パッケージをインストールしています..."
+# npm ci ではなく npm install を使う（コンテナのキャッシュを活かしやすい / 冪等）。
+npm install
+
+# .env が無ければ雛形からコピー（SQLite の接続先を設定）。
+if [ ! -f .env ]; then
+  echo "[session-start] .env を作成しています..."
+  cp .env.example .env
+fi
+
+echo "[session-start] Prisma Client を生成しています..."
+npx prisma generate
+
+echo "[session-start] データベースを準備しています..."
+npx prisma db push --skip-generate
+
+echo "[session-start] セットアップ完了。"

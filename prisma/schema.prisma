@@ -1,0 +1,35 @@
+// Prisma schema for the reading-management service.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// 1 冊の本の記録。ステータス・評価・感想・共有設定などを持つ。
+model Book {
+  id         String    @id @default(cuid())
+  title      String
+  author     String
+  genre      String?
+  coverUrl   String?
+  pages      Int?
+  // want (読みたい) | reading (読書中) | finished (読了)
+  status     String    @default("want")
+  // 自分でつける 1〜5 の星評価（読了本のみ想定）
+  rating     Int?
+  review     String?
+  // 共有機能: true なら誰でも見られる公開ページを持つ
+  isPublic   Boolean   @default(false)
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([status])
+  @@index([genre])
+}
