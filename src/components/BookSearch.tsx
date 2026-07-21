@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import BarcodeScanner from "@/components/BarcodeScanner";
 import type { BookSearchResult } from "@/app/api/books/search/route";
 
 // Google Books で書名を検索し、選ぶとフォームに自動入力するためのウィジェット。
@@ -13,13 +14,16 @@ export default function BookSearch({
   const [results, setResults] = useState<BookSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
-  async function search() {
-    if (!q.trim()) return;
+  // query を省略すると入力欄の値で検索する（バーコードからは isbn: クエリを渡す）
+  async function search(query?: string) {
+    const term = (query ?? q).trim();
+    if (!term) return;
     setLoading(true);
     setSearched(true);
     try {
-      const res = await fetch(`/api/books/search?q=${encodeURIComponent(q.trim())}`);
+      const res = await fetch(`/api/books/search?q=${encodeURIComponent(term)}`);
       const data = await res.json();
       setResults(data.results ?? []);
     } catch {
@@ -29,10 +33,18 @@ export default function BookSearch({
     }
   }
 
+  function handleBarcode(code: string) {
+    setScanning(false);
+    // ISBN の数字だけ取り出して isbn: 検索
+    const isbn = code.replace(/[^0-9Xx]/g, "");
+    setQ(isbn);
+    search(`isbn:${isbn}`);
+  }
+
   return (
     <div className="rounded-lg border border-dashed border-brand-300 bg-brand-50/50 p-4">
       <p className="mb-2 text-sm font-medium text-brand-800">
-        🔍 書名で検索して自動入力（Google Books）
+        🔍 書名またはバーコードで検索して自動入力（Google Books）
       </p>
       <div className="flex gap-2">
         <input
@@ -45,12 +57,29 @@ export default function BookSearch({
               search();
             }
           }}
-          placeholder="例: ノルウェイの森"
+          placeholder="例: ノルウェイの森 / ISBN"
         />
-        <button type="button" className="btn-primary flex-shrink-0" onClick={search} disabled={loading}>
+        <button
+          type="button"
+          className="btn bg-white text-brand-700 ring-1 ring-brand-300 hover:bg-brand-50 flex-shrink-0"
+          onClick={() => setScanning(true)}
+          title="バーコードで検索"
+        >
+          📷
+        </button>
+        <button
+          type="button"
+          className="btn-primary flex-shrink-0"
+          onClick={() => search()}
+          disabled={loading}
+        >
           {loading ? "検索中..." : "検索"}
         </button>
       </div>
+
+      {scanning && (
+        <BarcodeScanner onDetected={handleBarcode} onClose={() => setScanning(false)} />
+      )}
 
       {searched && !loading && results.length === 0 && (
         <p className="mt-2 text-xs text-gray-500">結果が見つかりませんでした。手入力してください。</p>
