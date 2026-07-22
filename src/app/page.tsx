@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import BookCard from "@/components/BookCard";
-import MonthlyChart from "@/components/MonthlyChart";
+import ReadingMeterChart from "@/components/ReadingMeterChart";
 import GenreChart from "@/components/GenreChart";
+import StatusBarChart from "@/components/StatusBarChart";
 import { getCurrentUserId } from "@/lib/auth-helpers";
 import {
   monthlyFinished,
+  yearlyFinished,
+  monthlyPagesRead,
+  yearlyPagesRead,
   genreDistribution,
+  statusBreakdown,
   tsundokuCount,
   totalPagesRead,
 } from "@/lib/stats";
@@ -32,8 +37,12 @@ export default async function HomePage() {
     finished,
   };
 
-  const monthly = monthlyFinished(books, 12);
+  const monthlyRead = monthlyFinished(books, 12);
+  const yearlyRead = yearlyFinished(books, 5);
+  const monthlyPages = monthlyPagesRead(books, 12);
+  const yearlyPages = yearlyPagesRead(books, 5);
   const genres = genreDistribution(books);
+  const statuses = statusBreakdown(books);
   const tsundoku = tsundokuCount(books);
   const pages = totalPagesRead(books);
 
@@ -54,8 +63,10 @@ export default async function HomePage() {
         <div className="space-y-10">
           {/* グラフ */}
           <section className="grid gap-4 lg:grid-cols-2">
-            <MonthlyChart data={monthly} />
+            <ReadingMeterChart title="読書メーター（読了数）" monthly={monthlyRead} yearly={yearlyRead} unit="冊" />
             <GenreChart data={genres} />
+            <ReadingMeterChart title="読んだページ数" monthly={monthlyPages} yearly={yearlyPages} unit="ページ" />
+            <StatusBarChart data={statuses} />
           </section>
 
           {STATUS_ORDER.map((status) => {
