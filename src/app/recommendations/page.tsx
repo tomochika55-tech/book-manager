@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { recommendNextBooks } from "@/lib/recommend";
 import { recommendWithAi, activeAiProvider } from "@/lib/ai";
 import { getCurrentUserId } from "@/lib/auth-helpers";
+import AddToShelfButton from "@/components/AddToShelfButton";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +10,7 @@ export default async function RecommendationsPage() {
   const userId = await getCurrentUserId();
   const books = userId ? await prisma.book.findMany({ where: { userId } }) : [];
 
-  // まず AI 提案を試み、キーが無い/失敗した場合は従来ロジックへフォールバック
+  // AI キーが設定されていれば AI 提案、なければ従来ロジックへフォールバック
   const aiRecs = await recommendWithAi(books);
   const usedAi = aiRecs !== null;
   const provider = activeAiProvider();
@@ -22,26 +22,22 @@ export default async function RecommendationsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-900">あなたへのおすすめ</h1>
-          {usedAi ? (
-            <span className="rounded-full bg-brand-600 px-2 py-0.5 text-xs font-medium text-white">
-              ✨ AI（{provider === "claude" ? "Claude" : "Gemini"}）
-            </span>
-          ) : (
-            <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600">
-              ルールベース
+        <h1 className="text-2xl font-bold text-gray-900">
+          あなたへのおすすめ
+          {usedAi && (
+            <span className="ml-2 align-middle text-xs font-normal text-brand-600">
+              ✨ AI
             </span>
           )}
-        </div>
+        </h1>
         <p className="mt-2 text-sm text-gray-500">
           {usedAi ? (
-            <>AIがあなたの読書履歴と評価を分析して、次の一冊を提案しました。</>
+            <>あなたの読書履歴と評価をもとに、次の一冊を選びました。</>
           ) : favoriteGenre ? (
             <>
               あなたの評価から、好みのジャンルは
               <span className="font-semibold text-brand-700">「{favoriteGenre}」</span>
-              と推定しました。次の一冊はいかがですか？
+              と推定しました。
             </>
           ) : (
             <>
@@ -71,21 +67,22 @@ export default async function RecommendationsPage() {
               <p className="mt-2 text-sm text-gray-700">{book.reason}</p>
               <p className="mt-1 text-xs text-brand-600">💡 {basedOn}</p>
             </div>
-            <Link href="/books/new" className="btn-ghost flex-shrink-0 text-xs">
-              本棚に追加
-            </Link>
+            <AddToShelfButton
+              title={book.title}
+              author={book.author}
+              genre={book.genre}
+            />
           </div>
         ))}
       </div>
 
-      {!usedAi && (
+      {/* AI キー未設定のときだけ、精度アップのヒントを表示。設定済みなら邪魔なので出さない。 */}
+      {!provider && (
         <div className="rounded-xl bg-brand-50 p-5 text-sm text-brand-800">
           <p className="font-medium">💡 おすすめの精度を上げるには</p>
           <p className="mt-1 text-brand-700">
             読んだ本のステータスを「読了」にして、星評価とジャンルを登録しましょう。
-            さらに、環境変数に <code className="rounded bg-white px-1">GEMINI_API_KEY</code> または{" "}
-            <code className="rounded bg-white px-1">ANTHROPIC_API_KEY</code>{" "}
-            を設定すると、AIによる高度な提案に切り替わります。
+            登録された本の傾向から、好みに合った次の一冊を提案します。
           </p>
         </div>
       )}

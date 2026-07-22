@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import BarcodeScanner from "@/components/BarcodeScanner";
 import type { BookSearchResult } from "@/app/api/books/search/route";
 
 // Google Books で書名を検索し、選ぶとフォームに自動入力するためのウィジェット。
+// 入力から 400ms 経過後に自動でオートコンプリート候補を出す。
 export default function BookSearch({
   onSelect,
 }: {
@@ -13,51 +14,68 @@ export default function BookSearch({
   const [q, setQ] = useState("");
   const [results, setResults] = useState<BookSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // query を省略すると入力欄の値で検索する（バーコードからは isbn: クエリを渡す）
-  async function search(query?: string) {
-    const term = (query ?? q).trim();
-    if (!term) return;
+  // 現在の入力に対する検索を実行する関数の参照。debounce のたび最新に置き換える。
+  const abortRef = useRef<AbortController | null>(null);
+
+  async function runSearch(term: string) {
+    // 進行中のリクエストがあればキャンセル（打鍵中の連続リクエスト対策）
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+
     setLoading(true);
-    setSearched(true);
+    setError(null);
     try {
-      const res = await fetch(`/api/books/search?q=${encodeURIComponent(term)}`);
+      const res = await fetch(`/api/books/search?q=${encodeURIComponent(term)}`, {
+        signal: ctrl.signal,
+      });
       const data = await res.json();
       setResults(data.results ?? []);
-    } catch {
-      setResults([]);
+      if (data.error) setError(data.error);
+    } catch (err) {
+      if ((err as { name?: string } | undefined)?.name !== "AbortError") {
+        setError("検索に失敗しました");
+        setResults([]);
+      }
     } finally {
-      setLoading(false);
+      if (abortRef.current === ctrl) setLoading(false);
     }
   }
 
+  // 入力を debounce（400ms 静止したら検索）
+  useEffect(() => {
+    const term = q.trim();
+    if (term.length < 2) {
+      setResults([]);
+      setError(null);
+      return;
+    }
+    const t = setTimeout(() => runSearch(term), 400);
+    return () => clearTimeout(t);
+  }, [q]);
+
   function handleBarcode(code: string) {
     setScanning(false);
-    // ISBN の数字だけ取り出して isbn: 検索
     const isbn = code.replace(/[^0-9Xx]/g, "");
     setQ(isbn);
-    search(`isbn:${isbn}`);
+    runSearch(`isbn:${isbn}`);
   }
 
   return (
     <div className="rounded-lg border border-dashed border-brand-300 bg-brand-50/50 p-4">
       <p className="mb-2 text-sm font-medium text-brand-800">
-        🔍 書名またはバーコードで検索して自動入力（Google Books）
+        🔍 書名またはバーコードで検索して自動入力
       </p>
       <div className="flex gap-2">
         <input
           className="input"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              search();
-            }
-          }}
-          placeholder="例: ノルウェイの森 / ISBN"
+          placeholder="例: ノルウェイの森 / ISBN（入力中に候補が出ます）"
+          autoComplete="off"
         />
         <button
           type="button"
@@ -67,22 +85,24 @@ export default function BookSearch({
         >
           📷
         </button>
-        <button
-          type="button"
-          className="btn-primary flex-shrink-0"
-          onClick={() => search()}
-          disabled={loading}
-        >
-          {loading ? "検索中..." : "検索"}
-        </button>
       </div>
 
       {scanning && (
         <BarcodeScanner onDetected={handleBarcode} onClose={() => setScanning(false)} />
       )}
 
-      {searched && !loading && results.length === 0 && (
-        <p className="mt-2 text-xs text-gray-500">結果が見つかりませんでした。手入力してください。</p>
+      {loading && (
+        <p className="mt-2 text-xs text-gray-500">検索中...</p>
+      )}
+
+      {!loading && error && (
+        <p className="mt-2 text-xs text-red-600">{error}</p>
+      )}
+
+      {!loading && !error && q.trim().length >= 2 && results.length === 0 && (
+        <p className="mt-2 text-xs text-gray-500">
+          結果が見つかりませんでした。下のフォームに手入力してください。
+        </p>
       )}
 
       {results.length > 0 && (
@@ -94,7 +114,7 @@ export default function BookSearch({
                 onClick={() => {
                   onSelect(r);
                   setResults([]);
-                  setSearched(false);
+                  setQ("");
                 }}
                 className="flex w-full items-center gap-3 rounded-lg border border-gray-200 bg-white p-2 text-left transition hover:border-brand-400 hover:bg-brand-50"
               >
