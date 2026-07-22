@@ -18,14 +18,12 @@ export async function GET(request: Request) {
   const q = new URL(request.url).searchParams.get("q")?.trim();
   if (!q) return NextResponse.json({ results: [] });
 
-  // "isbn:9784..." のような ISBN 検索では言語制限を外す（該当書が確実に返るように）
-  const isIsbnQuery = /^isbn:/i.test(q);
-
+  // 注意: langRestrict=ja は Google 側の言語メタデータが欠けている本を
+  // 取りこぼす原因になるため使わない（日本語の書名でもヒットしないことがあった）。
   const endpoint = new URL("https://www.googleapis.com/books/v1/volumes");
   endpoint.searchParams.set("q", q);
-  endpoint.searchParams.set("maxResults", "6");
+  endpoint.searchParams.set("maxResults", "8");
   endpoint.searchParams.set("printType", "books");
-  if (!isIsbnQuery) endpoint.searchParams.set("langRestrict", "ja");
 
   try {
     const res = await fetch(endpoint.toString(), {

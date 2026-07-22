@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import { authConfig } from "@/auth.config";
 
-// ミドルウェアはエッジで動くため、Node 専用モジュールを含まない
+// Proxy（旧 middleware）はエッジで動くため、Node 専用モジュールを含まない
 // authConfig だけを使ってアクセス制御を行う。
 export default NextAuth(authConfig).auth;
 

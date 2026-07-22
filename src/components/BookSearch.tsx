@@ -45,17 +45,21 @@ export default function BookSearch({
     }
   }
 
-  // 入力を debounce（400ms 静止したら検索）
+  // 入力を debounce（400ms 静止したら検索。2文字未満は onChange 側で結果をクリアする）
   useEffect(() => {
     const term = q.trim();
-    if (term.length < 2) {
-      setResults([]);
-      setError(null);
-      return;
-    }
+    if (term.length < 2) return;
     const t = setTimeout(() => runSearch(term), 400);
     return () => clearTimeout(t);
   }, [q]);
+
+  function handleInputChange(value: string) {
+    setQ(value);
+    if (value.trim().length < 2) {
+      setResults([]);
+      setError(null);
+    }
+  }
 
   function handleBarcode(code: string) {
     setScanning(false);
@@ -73,7 +77,7 @@ export default function BookSearch({
         <input
           className="input"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => handleInputChange(e.target.value)}
           placeholder="例: ノルウェイの森 / ISBN（入力中に候補が出ます）"
           autoComplete="off"
         />
