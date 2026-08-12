@@ -37,6 +37,8 @@ export async function PATCH(request: Request, { params }: Params) {
   if ("genre" in body) data.genre = emptyToNull(body.genre);
   if ("coverUrl" in body) data.coverUrl = emptyToNull(body.coverUrl);
   if ("pages" in body) data.pages = normalizeInt(body.pages);
+  if ("publisher" in body) data.publisher = emptyToNull(body.publisher);
+  if ("publishedYear" in body) data.publishedYear = normalizeInt(body.publishedYear);
   if ("review" in body) data.review = emptyToNull(body.review);
   if ("isPublic" in body) data.isPublic = Boolean(body.isPublic);
   if ("rating" in body) data.rating = normalizeRating(body.rating);

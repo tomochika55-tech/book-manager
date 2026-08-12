@@ -13,6 +13,8 @@ export type BookFormValues = {
   genre: string;
   coverUrl: string;
   pages: string;
+  publisher: string;
+  publishedYear: string;
   status: BookStatus;
   rating: number | null;
   review: string;
@@ -25,6 +27,8 @@ const EMPTY: BookFormValues = {
   genre: "",
   coverUrl: "",
   pages: "",
+  publisher: "",
+  publishedYear: "",
   status: "want",
   rating: null,
   review: "",
@@ -69,6 +73,8 @@ export default function BookForm({ initial }: { initial?: Partial<BookFormValues
         genre: values.genre.trim() || null,
         coverUrl: values.coverUrl.trim() || null,
         pages: values.pages ? Number(values.pages) : null,
+        publisher: values.publisher.trim() || null,
+        publishedYear: values.publishedYear ? Number(values.publishedYear) : null,
         status: values.status,
         rating: values.rating,
         review: values.review.trim() || null,
@@ -105,6 +111,8 @@ export default function BookForm({ initial }: { initial?: Partial<BookFormValues
               genre: r.genre || v.genre,
               coverUrl: r.coverUrl || v.coverUrl,
               pages: r.pages != null ? String(r.pages) : v.pages,
+              publisher: r.publisher || v.publisher,
+              publishedYear: r.publishedYear != null ? String(r.publishedYear) : v.publishedYear,
             }))
           }
         />
@@ -177,6 +185,32 @@ export default function BookForm({ initial }: { initial?: Partial<BookFormValues
             value={values.coverUrl}
             onChange={(e) => update("coverUrl", e.target.value)}
             placeholder="https://..."
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor="publisher">
+            出版社
+          </label>
+          <input
+            id="publisher"
+            className="input"
+            value={values.publisher}
+            onChange={(e) => update("publisher", e.target.value)}
+            placeholder="例: 講談社"
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor="publishedYear">
+            発行年
+          </label>
+          <input
+            id="publishedYear"
+            type="number"
+            min={0}
+            className="input"
+            value={values.publishedYear}
+            onChange={(e) => update("publishedYear", e.target.value)}
+            placeholder="例: 1987"
           />
         </div>
       </div>

@@ -7,6 +7,8 @@ export type BookSearchResult = {
   coverUrl: string | null;
   pages: number | null;
   genre: string | null;
+  publisher: string | null;
+  publishedYear: number | null;
 };
 
 // GET /api/books/search?q=... — Google Books API で書籍を検索する。
@@ -42,10 +44,14 @@ export async function GET(request: Request) {
         imageLinks?: { thumbnail?: string; smallThumbnail?: string };
         pageCount?: number;
         categories?: string[];
+        publisher?: string;
+        publishedDate?: string;
       };
     }) => {
       const v = item.volumeInfo ?? {};
       const thumb = v.imageLinks?.thumbnail ?? v.imageLinks?.smallThumbnail ?? null;
+      // publishedDate は "1987" / "1987-09" / "1987-09-04" などの形式なので先頭4桁を年として取り出す
+      const yearMatch = v.publishedDate?.match(/^\d{4}/);
       return {
         title: v.title ?? "",
         author: (v.authors ?? []).join(", "),
@@ -53,6 +59,8 @@ export async function GET(request: Request) {
         coverUrl: thumb ? thumb.replace(/^http:/, "https:") : null,
         pages: typeof v.pageCount === "number" && v.pageCount > 0 ? v.pageCount : null,
         genre: v.categories?.[0] ?? null,
+        publisher: v.publisher ?? null,
+        publishedYear: yearMatch ? Number(yearMatch[0]) : null,
       };
     }).filter((r: BookSearchResult) => r.title);
 

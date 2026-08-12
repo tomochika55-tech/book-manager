@@ -33,6 +33,8 @@ export default async function EditBookPage({
           genre: book.genre ?? "",
           coverUrl: book.coverUrl ?? "",
           pages: book.pages != null ? String(book.pages) : "",
+          publisher: book.publisher ?? "",
+          publishedYear: book.publishedYear != null ? String(book.publishedYear) : "",
           status: book.status as BookStatus,
           rating: book.rating,
           review: book.review ?? "",

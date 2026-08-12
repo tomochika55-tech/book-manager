@@ -36,6 +36,8 @@ model Book {
   genre      String?
   coverUrl   String?
   pages      Int?
+  publisher     String?
+  publishedYear Int?
   // want (読みたい/積読) | reading (読書中) | finished (読了)
   status     String    @default("want")
   // 自分でつける 1〜5 の星評価（読了本のみ想定）
