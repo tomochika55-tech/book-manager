@@ -10,10 +10,13 @@ export default function AddToShelfButton({
   title,
   author,
   genre,
+  variant = "chip",
 }: {
   title: string;
   author: string;
   genre: string | null;
+  /** chip: 既存の小さめタグ風ボタン / pill: 新デザインのアウトライン丸ボタン */
+  variant?: "chip" | "pill";
 }) {
   const router = useRouter();
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
@@ -65,11 +68,30 @@ export default function AddToShelfButton({
   }
 
   const label = {
-    idle: "読みたいに追加",
+    idle: variant === "pill" ? "ウィッシュリストに追加" : "読みたいに追加",
     loading: "追加中...",
     done: "✓ 追加しました",
     error: "エラー",
   }[state];
+
+  if (variant === "pill") {
+    return (
+      <button
+        type="button"
+        onClick={handleAdd}
+        disabled={state !== "idle"}
+        className={`font-body-md text-body-md flex-shrink-0 rounded-full border px-6 py-2 transition-colors duration-300 ${
+          state === "done"
+            ? "border-primary text-primary"
+            : state === "error"
+              ? "border-error text-error"
+              : "border-secondary text-secondary hover:bg-secondary hover:text-white"
+        }`}
+      >
+        {label}
+      </button>
+    );
+  }
 
   return (
     <button

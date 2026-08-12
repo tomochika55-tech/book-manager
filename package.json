@@ -17,6 +17,7 @@
     "@zxing/browser": "^0.2.1",
     "@zxing/library": "^0.23.0",
     "bcryptjs": "^3.0.3",
+    "lucide-react": "^1.31.0",
     "next": "^16.2.11",
     "next-auth": "^5.0.0-beta.25",
     "react": "19.0.0",
