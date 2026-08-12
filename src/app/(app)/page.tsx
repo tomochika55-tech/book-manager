@@ -6,6 +6,7 @@ import AddToShelfButton from "@/components/AddToShelfButton";
 import { getCurrentUserId } from "@/lib/auth-helpers";
 import { recommendWithAi } from "@/lib/ai";
 import { recommendNextBooks } from "@/lib/recommend";
+import { fetchCoverUrl } from "@/lib/google-books";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,9 @@ export default async function HomePage() {
   const aiRecs = await recommendWithAi(books);
   const heuristic = recommendNextBooks(books, 1);
   const featured = (aiRecs ?? heuristic.recommendations)[0] ?? null;
+  const featuredCover = featured
+    ? await fetchCoverUrl(featured.book.title, featured.book.author)
+    : null;
 
   return (
     <>
@@ -147,7 +151,12 @@ export default async function HomePage() {
                 Featured Today
               </span>
               <div className="spine-shadow relative z-10 my-2 h-48 w-32 overflow-hidden rounded-md bg-surface-variant">
-                <div className="flex h-full w-full items-center justify-center text-4xl">📖</div>
+                {featuredCover ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={featuredCover} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-4xl">📖</div>
+                )}
               </div>
               <div className="relative z-10 flex flex-col gap-1">
                 <h3 className="font-display-md text-display-md text-primary">{featured.book.title}</h3>
