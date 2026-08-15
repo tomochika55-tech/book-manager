@@ -46,7 +46,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <AppHeader title="読む" />
+      <AppHeader />
       <main className="flex flex-col gap-section-gap px-margin-main pt-stack-md">
         {/* 現在読んでいる本 */}
         <section className="flex flex-col gap-stack-md">
