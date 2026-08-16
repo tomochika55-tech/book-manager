@@ -42,6 +42,8 @@ export async function POST(request: Request) {
       genre: emptyToNull(body.genre),
       coverUrl: emptyToNull(body.coverUrl),
       pages: normalizeInt(body.pages),
+      publisher: emptyToNull(body.publisher),
+      publishedYear: normalizeInt(body.publishedYear),
       status,
       rating,
       review: emptyToNull(body.review),
