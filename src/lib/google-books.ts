@@ -20,7 +20,12 @@ export async function searchGoogleBooks(q: string): Promise<BookSearchResult[]> 
       headers: { Accept: "application/json" },
       next: { revalidate: 3600 },
     });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      // Vercel のログで原因（キー未設定/無効/クォータ超過など）を追えるようにする
+      const body = await res.text().catch(() => "");
+      console.error(`[google-books] search failed: ${res.status} ${body.slice(0, 500)}`);
+      return [];
+    }
     const data = await res.json();
     return (data.items ?? []).map((item: {
       volumeInfo?: {
@@ -46,7 +51,8 @@ export async function searchGoogleBooks(q: string): Promise<BookSearchResult[]> 
         publishedYear: yearMatch ? Number(yearMatch[0]) : null,
       };
     }).filter((r: BookSearchResult) => r.title);
-  } catch {
+  } catch (err) {
+    console.error("[google-books] search threw:", err);
     return [];
   }
 }

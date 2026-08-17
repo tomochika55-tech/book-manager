@@ -40,7 +40,9 @@ function buildPrompt(books: BookLike[]): string {
   return (
     `${summarizeHistory(books)}\n\n` +
     "この読者の好みを踏まえて、次に読むとよい本を3冊、日本語で提案してください。" +
-    "各提案には title, author, genre, reason（なぜこの人に合うかを1〜2文で）を含めてください。"
+    "各提案には title, author, genre, reason を含めてください。" +
+    "reason は本の裏表紙のあらすじのように、あらすじ・見どころを3〜5文程度で具体的に紹介し、" +
+    "文末で簡潔にこの読者へのおすすめ理由に触れてください（ネタバレとなる結末は避ける）。"
   );
 }
 
