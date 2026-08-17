@@ -6,6 +6,6 @@ import { authConfig } from "@/auth.config";
 export default NextAuth(authConfig).auth;
 
 export const config = {
-  // 静的ファイルと画像最適化を除く全ルートに適用
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // 静的ファイルと画像最適化、アプリアイコン（favicon等・未ログインでも必要）を除く全ルートに適用
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg).*)"],
 };

@@ -9,6 +9,11 @@ export async function searchGoogleBooks(q: string): Promise<BookSearchResult[]> 
   endpoint.searchParams.set("q", q);
   endpoint.searchParams.set("maxResults", "8");
   endpoint.searchParams.set("printType", "books");
+  // Google は未認証（APIキーなし）リクエストの割り当てを厳しく制限しているため、
+  // キーがあれば付与する（無いと本番でも 429 で検索が機能しないことがある）。
+  if (process.env.GOOGLE_BOOKS_API_KEY) {
+    endpoint.searchParams.set("key", process.env.GOOGLE_BOOKS_API_KEY);
+  }
 
   try {
     const res = await fetch(endpoint.toString(), {

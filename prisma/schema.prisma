@@ -23,6 +23,12 @@ model User {
   passwordHash String?
   createdAt    DateTime @default(now())
   books        Book[]
+
+  following     Follow[]       @relation("Follower")
+  followers     Follow[]       @relation("Following")
+  likes         Like[]
+  notifications Notification[] @relation("NotificationRecipient")
+  actedNotifications Notification[] @relation("NotificationActor")
 }
 
 /// 1 冊の本の記録。ステータス・評価・感想・共有設定などを持つ。
@@ -50,7 +56,56 @@ model Book {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
+  likes         Like[]
+  notifications Notification[]
+
   @@index([userId])
   @@index([status])
   @@index([genre])
+}
+
+/// フォロー関係。followerId が followingId をフォローしている。
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+/// 公開された本の記録への「いいね」。
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, bookId])
+  @@index([bookId])
+}
+
+/// ユーザーへの通知（フォローされた・いいねされた）。
+model Notification {
+  id        String   @id @default(cuid())
+  // 通知を受け取るユーザー
+  userId    String
+  user      User     @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  // 通知を発生させたユーザー（フォローした人・いいねした人）
+  actorId   String
+  actor     User     @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  // "follow" | "like"
+  type      String
+  // いいね通知の場合、対象の本
+  bookId    String?
+  book      Book?    @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }

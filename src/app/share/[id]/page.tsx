@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import StarRating from "@/components/StarRating";
+import LikeButton from "@/components/LikeButton";
+import { getCurrentUserId } from "@/lib/auth-helpers";
 import { STATUS_LABELS, type BookStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +29,7 @@ export default async function SharePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const viewerId = await getCurrentUserId();
   const book = await prisma.book.findUnique({
     where: { id },
     include: { user: { select: { name: true } } },
@@ -48,6 +51,19 @@ export default async function SharePage({
     orderBy: { updatedAt: "desc" },
     take: 20,
   });
+
+  const likeTargetIds = [book.id, ...otherReviews.map((r) => r.id)];
+  const [likeCounts, myLikes] = await Promise.all([
+    prisma.like.groupBy({ by: ["bookId"], where: { bookId: { in: likeTargetIds } }, _count: true }),
+    viewerId
+      ? prisma.like.findMany({
+          where: { userId: viewerId, bookId: { in: likeTargetIds } },
+          select: { bookId: true },
+        })
+      : Promise.resolve([]),
+  ]);
+  const countMap = new Map(likeCounts.map((l) => [l.bookId, l._count]));
+  const likedSet = new Set(myLikes.map((l) => l.bookId));
 
   const status = book.status as BookStatus;
 
@@ -95,6 +111,20 @@ export default async function SharePage({
             </p>
           </div>
         )}
+
+        <div className="flex justify-center border-t border-gray-100 px-8 py-4">
+          {viewerId && viewerId !== book.userId ? (
+            <LikeButton
+              bookId={book.id}
+              initialLiked={likedSet.has(book.id)}
+              initialCount={countMap.get(book.id) ?? 0}
+            />
+          ) : (
+            (countMap.get(book.id) ?? 0) > 0 && (
+              <span className="text-sm text-gray-500">❤ {countMap.get(book.id)}</span>
+            )
+          )}
+        </div>
       </div>
 
       {/* 同じ本に対する他ユーザーの感想 */}
@@ -116,6 +146,19 @@ export default async function SharePage({
                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
                   {r.review}
                 </p>
+                <div className="mt-2">
+                  {viewerId && viewerId !== r.userId ? (
+                    <LikeButton
+                      bookId={r.id}
+                      initialLiked={likedSet.has(r.id)}
+                      initialCount={countMap.get(r.id) ?? 0}
+                    />
+                  ) : (
+                    (countMap.get(r.id) ?? 0) > 0 && (
+                      <span className="text-xs text-gray-500">❤ {countMap.get(r.id)}</span>
+                    )
+                  )}
+                </div>
               </li>
             ))}
           </ul>
